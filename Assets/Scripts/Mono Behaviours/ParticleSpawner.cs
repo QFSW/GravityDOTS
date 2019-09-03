@@ -17,6 +17,9 @@ namespace QFSW.GravityDOTS
         [SerializeField]
         private int _particleCount = 100;
 
+        [SerializeField]
+        private Material _particleMaterial;
+        
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
 
