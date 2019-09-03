@@ -1,21 +1,33 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Unity.Jobs;
+using Unity.Collections;
 using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
-    public class MovementSystem : ComponentSystem
+    public class MovementSystem : JobComponentSystem
     {
-        protected override void OnUpdate()
+        private struct MovementJob : IJobForEach<Velocity, Translation>
         {
-            float dt = Time.deltaTime;
+            public float DeltaTime;
 
-            Entities.ForEach((ref Velocity velocity, ref Translation translation) =>
+            public void Execute([ReadOnly] ref Velocity velocity, ref Translation translation)
             {
-                float2 dx = velocity.Value * dt;
+                float2 dx = velocity.Value * DeltaTime;
                 translation.Value += new float3(dx, 0);
-            });
+            }
+        }
+
+        protected override JobHandle OnUpdate(JobHandle inputDependencies)
+        {
+            MovementJob job = new MovementJob()
+            {
+                DeltaTime = Time.deltaTime
+            };
+
+            return job.Schedule(this, inputDependencies);
         }
     }
 }
