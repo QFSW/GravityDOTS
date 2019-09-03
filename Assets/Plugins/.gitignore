@@ -1,0 +1,8 @@
+# Ignore everything
+/*
+
+# Never ignore gitignore
+!.gitignore
+
+# Never ignore
+#format !file.ext
