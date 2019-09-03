@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
+    [UpdateBefore(typeof(UnityEngine.Experimental.PlayerLoop.FixedUpdate))]
     public class MovementSystem : JobComponentSystem
     {
         private struct MovementJob : IJobForEach<Velocity, Translation>
@@ -24,7 +25,7 @@ namespace QFSW.GravityDOTS
         {
             MovementJob job = new MovementJob()
             {
-                DeltaTime = Time.deltaTime
+                DeltaTime = Time.fixedDeltaTime
             };
 
             return job.Schedule(this, inputDependencies);
