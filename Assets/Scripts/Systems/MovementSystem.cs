@@ -10,14 +10,15 @@ namespace QFSW.GravityDOTS
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class MovementSystem : JobComponentSystem
     {
-        private struct MovementJob : IJobForEach<Velocity, Translation>
+        private struct MovementJob : IJobForEach<Velocity, LocalToWorld>
         {
             public float DeltaTime;
 
-            public void Execute([ReadOnly] ref Velocity velocity, ref Translation translation)
+            public void Execute([ReadOnly] ref Velocity velocity, ref LocalToWorld transform)
             {
                 float2 dx = velocity.Value * DeltaTime;
-                translation.Value += new float3(dx, 0);
+
+                transform.Value += new float4x4(float4.zero, float4.zero, float4.zero, new float4(dx, 0, 0));
             }
         }
 
