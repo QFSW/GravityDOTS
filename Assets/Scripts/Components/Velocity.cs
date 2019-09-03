@@ -3,8 +3,8 @@ using Unity.Mathematics;
 
 namespace QFSW.GravityDOTS
 {
-    public struct VelocityData : IComponentData
+    public struct Velocity : IComponentData
     {
-        public float2 Velocity;
+        public float2 Value;
     }
 }
