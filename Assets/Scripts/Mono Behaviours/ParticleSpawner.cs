@@ -16,16 +16,22 @@ namespace QFSW.GravityDOTS
         [SerializeField] private float _particleMaxSpeed = 3;
 
         [SerializeField] private Material _particleMaterial;
-
         [SerializeField] private Mesh _particleMesh;
         
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
 
+        private static readonly ComponentType[] _particleComponents =
+        {
+            typeof(Velocity), typeof(LocalToWorld),
+            typeof(Mass), typeof(Bounded),
+            typeof(RenderMesh), typeof(RenderBounds)
+        };
+
         private void Awake()
         {
             _entityManager = World.Active.EntityManager;
-            _particleType = _entityManager.CreateArchetype(typeof(Velocity), typeof(LocalToWorld), typeof(RenderMesh), typeof(RenderBounds));
+            _particleType = _entityManager.CreateArchetype(_particleComponents);
         }
 
         private void Start()
