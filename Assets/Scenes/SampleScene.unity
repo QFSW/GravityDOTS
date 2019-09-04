@@ -249,6 +249,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _particleCount: 200
   _particleMaxSpeed: 10
+  _particleMass:
+    x: 100
+    y: 1000
+  _particleDensity: 1000
   _particleMaterial: {fileID: 2100000, guid: 23f48bd2185d8f94eb2ccff995b6ac93, type: 2}
   _particleMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!114 &1171005673
