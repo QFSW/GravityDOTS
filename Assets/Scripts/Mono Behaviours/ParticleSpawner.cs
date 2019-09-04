@@ -21,17 +21,17 @@ namespace QFSW.GravityDOTS
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
 
-        private static readonly ComponentType[] _particleComponents =
-        {
-            typeof(Velocity), typeof(LocalToWorld),
-            typeof(Mass), typeof(Bounded),
-            typeof(RenderMesh), typeof(RenderBounds)
-        };
-
         private void Awake()
         {
+            ComponentType[] particleComponents =
+            {
+                typeof(Velocity), typeof(LocalToWorld),
+                typeof(Mass), typeof(Radius), typeof(Bounded),
+                typeof(RenderMesh), typeof(RenderBounds)
+            };
+
             _entityManager = World.Active.EntityManager;
-            _particleType = _entityManager.CreateArchetype(_particleComponents);
+            _particleType = _entityManager.CreateArchetype(particleComponents);
         }
 
         private void Start()
@@ -66,7 +66,7 @@ namespace QFSW.GravityDOTS
                 _entityManager.SetComponentData(particles[i], bounds);
                 _entityManager.SetSharedComponentData(particles[i], rm);
                 _entityManager.SetComponentData(particles[i], new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
-                
+                _entityManager.SetComponentData(particles[i], new Radius() { Value = 0.5f });
             }
 
             particles.Dispose();
