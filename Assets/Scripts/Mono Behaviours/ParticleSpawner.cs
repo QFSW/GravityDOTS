@@ -12,14 +12,12 @@ namespace QFSW.GravityDOTS
 {
     public class ParticleSpawner : MonoBehaviour
     {
-        [SerializeField]
-        private int _particleCount = 100;
+        [SerializeField] private int _particleCount = 100;
+        [SerializeField] private float _particleMaxSpeed = 3;
 
-        [SerializeField]
-        private Material _particleMaterial;
+        [SerializeField] private Material _particleMaterial;
 
-        [SerializeField]
-        private Mesh _particleMesh;
+        [SerializeField] private Mesh _particleMesh;
         
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
@@ -34,8 +32,6 @@ namespace QFSW.GravityDOTS
         {
             SpawnParticles(_particleCount);
         }
-
-        private static readonly float2 Min = new float2(-3, -3), Max = new float2(3, 3);
 
         public void SpawnParticles(int count)
         {
@@ -56,12 +52,14 @@ namespace QFSW.GravityDOTS
 
             Random r = new Random((uint)count + 1);
 
+            float2 minVal = new float2(-_particleMaxSpeed, -_particleMaxSpeed);
+            float2 maxVel = new float2(_particleMaxSpeed, _particleMaxSpeed);
             for (int i = 0; i < particles.Length; i++)
             {
                 _entityManager.SetComponentData(particles[i], pos);                        
                 _entityManager.SetComponentData(particles[i], bounds);
                 _entityManager.SetSharedComponentData(particles[i], rm);
-                _entityManager.SetComponentData(particles[i], new Velocity() { Value = r.NextFloat2(Min, Max) });
+                _entityManager.SetComponentData(particles[i], new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
                 
             }
 
