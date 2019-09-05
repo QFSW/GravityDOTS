@@ -35,6 +35,8 @@ namespace QFSW.GravityDOTS
 
             _entityManager = World.Active.EntityManager;
             _particleType = _entityManager.CreateArchetype(particleComponents);
+
+            World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
         }
 
         private void Start()
