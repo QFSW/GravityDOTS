@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Unity.Burst;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
@@ -11,6 +12,7 @@ namespace QFSW.GravityDOTS
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class BoundingBoxSystem : JobComponentSystem
     {
+        [BurstCompile]
         private struct BoundingJob : IJobForEach<Velocity, Translation, Radius, Bounded>
         {
             public float2 BoundsX;

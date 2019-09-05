@@ -1,3 +1,4 @@
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -24,7 +25,7 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy = new NativeHashMap<Entity, Entity>(1024, Allocator.Persistent);
 
 			particleQuery = GetEntityQuery(
-				ComponentType.ReadOnly<ParticleTag>(),
+				//ComponentType.ReadOnly<ParticleTag>(),
 				ComponentType.ReadOnly<Translation>(),
 				ComponentType.ReadOnly<Bounded>(),
 				typeof(Mass),
@@ -38,6 +39,7 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy.Dispose();
 		}
 
+		[BurstCompile]
 		private struct CollideMergeJob : IJob
 		{
 			public float ParticleDensity;
@@ -110,7 +112,6 @@ namespace QFSW.GravityDOTS
 								massData1[i] = new Mass { Value = mass };
 								radiusData1[i] = new Radius() { Value = newRadius };
 								scaleData1[i] = new Scale { Value = newRadius * 2f };
-
 
 								EntitiesToDestroy.TryAdd(del, del);
 							}

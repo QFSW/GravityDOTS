@@ -1,4 +1,4 @@
-using Unity.Entities;
+/*using Unity.Entities;
 
 namespace QFSW.GravityDOTS
 {
@@ -36,4 +36,4 @@ namespace QFSW.GravityDOTS
 			PostUpdateCommands.RemoveComponent(deadParticlesQuery, typeof(ParticleTag));
 		}
 	}
-}
+}*/

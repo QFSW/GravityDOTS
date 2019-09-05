@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Unity.Burst;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Collections;
@@ -56,6 +57,7 @@ namespace QFSW.GravityDOTS
             SpawnParticles(_particleCount);
         }
 
+        [BurstCompile]
         private void SpawnParticles(int count)
         {
             float2 bottomLeft = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(0, 0));

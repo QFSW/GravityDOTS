@@ -1,4 +1,5 @@
-﻿using Unity.Entities;
+﻿using Unity.Burst;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.Jobs;
@@ -7,6 +8,7 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
+    [BurstCompile]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class MovementSystem : JobComponentSystem
     {
