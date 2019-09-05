@@ -7,6 +7,7 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
+    [UpdateAfter(typeof(MovementSystem))]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class BoundingBoxSystem : JobComponentSystem
     {

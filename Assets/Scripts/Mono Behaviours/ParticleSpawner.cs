@@ -69,12 +69,13 @@ namespace QFSW.GravityDOTS
                 float mass = r.NextFloat(_particleMass.x, _particleMass.y);
                 float radius = math.pow(3 / (4 * math.PI) * mass / _particleDensity, 1 / 3f);
 
-                _entityManager.SetComponentData(particles[i], pos);                        
-                _entityManager.SetComponentData(particles[i], bounds);
-                _entityManager.SetSharedComponentData(particles[i], rm);
-                _entityManager.SetComponentData(particles[i], new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
-                _entityManager.SetComponentData(particles[i], new Radius() { Value = radius });
-                _entityManager.SetComponentData(particles[i], new Scale() { Value = radius * 2f });
+                Entity particle = particles[i];
+                _entityManager.SetComponentData(particle, pos);                        
+                _entityManager.SetComponentData(particle, bounds);
+                _entityManager.SetSharedComponentData(particle, rm);
+                _entityManager.SetComponentData(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
+                _entityManager.SetComponentData(particle, new Radius() { Value = radius });
+                _entityManager.SetComponentData(particle, new Scale() { Value = radius * 2f });
             }
 
             particles.Dispose();
