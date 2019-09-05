@@ -37,9 +37,15 @@ namespace QFSW.GravityDOTS
         {
             ComponentType[] particleComponents =
             {
-                typeof(Velocity), typeof(LocalToWorld), typeof(Scale),
-                typeof(Mass), typeof(Radius), typeof(Bounded),
-                typeof(RenderMesh), typeof(RenderBounds)
+                typeof(LocalToWorld),
+                typeof(Translation),
+                typeof(Scale),
+                typeof(Velocity),
+                typeof(Mass),
+                typeof(Radius),
+                typeof(Bounded),
+                typeof(RenderBounds),
+                typeof(RenderMesh),
             };
 
             _entityManager = World.Active.EntityManager;
@@ -79,11 +85,7 @@ namespace QFSW.GravityDOTS
                 float radius = math.pow(3 / (4 * math.PI) * mass / _particleDensity, 1f / 3f);
                 float scale = radius * 2f;
 
-                LocalToWorld pos = new LocalToWorld
-                {
-                    Value = float4x4.TRS(new float3(r.NextFloat2(bottomLeft, topRight), 0f), quaternion.identity,
-                        new float3(scale, scale, scale))
-                };
+                Translation pos = new Translation() { Value = new float3(r.NextFloat2(bottomLeft, topRight), 0f) };
 
                 Entity particle = particles[i];
                 _entityManager.SetComponentData(particle, pos);

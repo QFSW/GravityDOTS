@@ -24,7 +24,8 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy = new NativeHashMap<Entity, Entity>(1024, Allocator.Persistent);
 
 			particleQuery = GetEntityQuery(
-				ComponentType.ReadOnly<LocalToWorld>(),
+				ComponentType.ReadOnly<ParticleTag>(),
+				ComponentType.ReadOnly<Translation>(),
 				ComponentType.ReadOnly<Bounded>(),
 				typeof(Mass),
 				typeof(Radius),
@@ -47,9 +48,9 @@ namespace QFSW.GravityDOTS
 
 			[ReadOnly]
 			public ArchetypeChunkEntityType EntityType;
-			
+
 			[ReadOnly]
-			public ArchetypeChunkComponentType<LocalToWorld> TransformType;
+			public ArchetypeChunkComponentType<Translation> PositionType;
 
 			public ArchetypeChunkComponentType<Mass> MassType;
 			public ArchetypeChunkComponentType<Radius> RadiusType;
@@ -61,13 +62,13 @@ namespace QFSW.GravityDOTS
 
 			private void ExecuteChunks(ArchetypeChunk chunk1, ArchetypeChunk chunk2)
 			{
-				NativeArray<LocalToWorld> transformData1 = chunk1.GetNativeArray(TransformType);
+				NativeArray<Translation> transformData1 = chunk1.GetNativeArray(PositionType);
 				NativeArray<Mass> massData1 = chunk1.GetNativeArray(MassType);
 				NativeArray<Radius> radiusData1 = chunk1.GetNativeArray(RadiusType);
 				NativeArray<Scale> scaleData1 = chunk1.GetNativeArray(ScaleType);
 				NativeArray<Entity> entityData1 = chunk1.GetNativeArray(EntityType);
 
-				NativeArray<LocalToWorld> transformData2 = chunk2.GetNativeArray(TransformType);
+				NativeArray<Translation> transformData2 = chunk2.GetNativeArray(PositionType);
 				NativeArray<Mass> massData2 = chunk2.GetNativeArray(MassType);
 				NativeArray<Radius> radiusData2 = chunk2.GetNativeArray(RadiusType);
 				NativeArray<Entity> entityData2 = chunk2.GetNativeArray(EntityType);
@@ -86,29 +87,31 @@ namespace QFSW.GravityDOTS
 							Entity current = entityData1[i];
 							if (EntitiesToDestroy.ContainsKey(current)) continue;
 
-							float3 pos1 = transformData1[i].Position;
+							float3 pos1 = transformData1[i].Value;
 							float rad1 = radiusData1[i].Value;
 
 							for (int j = 0; j < chunk2.Count; j++)
 							{
 								Entity del = entityData2[j];
+								if (current == del) continue;
 								if (EntitiesToDestroy.ContainsKey(del)) continue;
 
-								float3 pos2 = transformData2[j].Position;
+								float3 pos2 = transformData2[j].Value;
 								float rad = radiusData2[j].Value + rad1;
 
-								if (!(math.distancesq(pos1, pos2) < rad * rad)) continue;
-								
+								float distance = math.distancesq(pos1, pos2);
+								if (distance > rad * rad) continue;
+
 								velocity1[i] = new Velocity
 									{ Value = (velocity1[i].Value + velocity2[j].Value) / 2f };
-								
+
 								float mass = massData1[i].Value + massData2[j].Value;
 								float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
 								massData1[i] = new Mass { Value = mass };
 								radiusData1[i] = new Radius() { Value = newRadius };
 								scaleData1[i] = new Scale { Value = newRadius * 2f };
 
-								
+
 								EntitiesToDestroy.TryAdd(del, del);
 							}
 						}
@@ -181,7 +184,7 @@ namespace QFSW.GravityDOTS
 			NativeArray<ArchetypeChunk> chunks = particleQuery.CreateArchetypeChunkArray(Allocator.TempJob);
 
 			ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-			ArchetypeChunkComponentType<LocalToWorld> transformType = GetArchetypeChunkComponentType<LocalToWorld>(true);
+			ArchetypeChunkComponentType<Translation> transformType = GetArchetypeChunkComponentType<Translation>(true);
 			ArchetypeChunkComponentType<Mass> massType = GetArchetypeChunkComponentType<Mass>(false);
 			ArchetypeChunkComponentType<Radius> radiusType = GetArchetypeChunkComponentType<Radius>(false);
 			ArchetypeChunkComponentType<Scale> scaleType = GetArchetypeChunkComponentType<Scale>(false);
@@ -196,7 +199,7 @@ namespace QFSW.GravityDOTS
 				ParticleDensity = ParticleDensity,
 				Chunks = chunks,
 				EntityType = entityType,
-				TransformType = transformType,
+				PositionType = transformType,
 				MassType = massType,
 				RadiusType = radiusType,
 				ScaleType = scaleType,
