@@ -28,6 +28,7 @@ namespace QFSW.GravityDOTS
 				//ComponentType.ReadOnly<ParticleTag>(),
 				ComponentType.ReadOnly<Translation>(),
 				ComponentType.ReadOnly<Bounded>(),
+                typeof(Velocity),
 				typeof(Mass),
 				typeof(Radius),
 				typeof(Scale)
@@ -62,100 +63,56 @@ namespace QFSW.GravityDOTS
 
 			public NativeHashMap<Entity, Entity> EntitiesToDestroy;
 
-			private void ExecuteChunks(ArchetypeChunk chunk1, ArchetypeChunk chunk2)
-			{
-				NativeArray<Translation> transformData1 = chunk1.GetNativeArray(PositionType);
-				NativeArray<Mass> massData1 = chunk1.GetNativeArray(MassType);
-				NativeArray<Radius> radiusData1 = chunk1.GetNativeArray(RadiusType);
-				NativeArray<Scale> scaleData1 = chunk1.GetNativeArray(ScaleType);
-				NativeArray<Entity> entityData1 = chunk1.GetNativeArray(EntityType);
+            private void ExecuteChunks(ArchetypeChunk chunk1, ArchetypeChunk chunk2)
+            {
+                NativeArray<Translation> transformData1 = chunk1.GetNativeArray(PositionType);
+                NativeArray<Mass> massData1 = chunk1.GetNativeArray(MassType);
+                NativeArray<Radius> radiusData1 = chunk1.GetNativeArray(RadiusType);
+                NativeArray<Scale> scaleData1 = chunk1.GetNativeArray(ScaleType);
+                NativeArray<Entity> entityData1 = chunk1.GetNativeArray(EntityType);
+                NativeArray<Velocity> velocity1 = chunk1.GetNativeArray(VelocityType);
 
-				NativeArray<Translation> transformData2 = chunk2.GetNativeArray(PositionType);
-				NativeArray<Mass> massData2 = chunk2.GetNativeArray(MassType);
-				NativeArray<Radius> radiusData2 = chunk2.GetNativeArray(RadiusType);
-				NativeArray<Entity> entityData2 = chunk2.GetNativeArray(EntityType);
+                NativeArray<Translation> transformData2 = chunk2.GetNativeArray(PositionType);
+                NativeArray<Mass> massData2 = chunk2.GetNativeArray(MassType);
+                NativeArray<Radius> radiusData2 = chunk2.GetNativeArray(RadiusType);
+                NativeArray<Entity> entityData2 = chunk2.GetNativeArray(EntityType);
+                NativeArray<Velocity> velocity2 = chunk2.GetNativeArray(VelocityType);
 
-				if (chunk1.Has(VelocityType))
-				{
-					NativeArray<Velocity> velocity1 = chunk1.GetNativeArray(VelocityType);
 
-					// both chunks have velocity
-					if (chunk2.Has(VelocityType))
-					{
-						NativeArray<Velocity> velocity2 = chunk2.GetNativeArray(VelocityType);
+                for (int i = 0; i < chunk1.Count; i++)
+                {
+                    Entity current = entityData1[i];
+                    if (EntitiesToDestroy.ContainsKey(current)) continue;
 
-						for (int i = 0; i < chunk1.Count; i++)
-						{
-							Entity current = entityData1[i];
-							if (EntitiesToDestroy.ContainsKey(current)) continue;
+                    float3 pos1 = transformData1[i].Value;
+                    float rad1 = radiusData1[i].Value;
 
-							float3 pos1 = transformData1[i].Value;
-							float rad1 = radiusData1[i].Value;
+                    for (int j = 0; j < chunk2.Count; j++)
+                    {
+                        Entity del = entityData2[j];
+                        if (current == del) continue;
+                        if (EntitiesToDestroy.ContainsKey(del)) continue;
 
-							for (int j = 0; j < chunk2.Count; j++)
-							{
-								Entity del = entityData2[j];
-								if (current == del) continue;
-								if (EntitiesToDestroy.ContainsKey(del)) continue;
+                        float3 pos2 = transformData2[j].Value;
+                        float rad = radiusData2[j].Value + rad1;
 
-								float3 pos2 = transformData2[j].Value;
-								float rad = radiusData2[j].Value + rad1;
+                        float distance = math.distancesq(pos1, pos2);
+                        if (distance > rad * rad) continue;
 
-								float distance = math.distancesq(pos1, pos2);
-								if (distance > rad * rad) continue;
+                        float mass = massData1[i].Value + massData2[j].Value;
+                        float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
+                        float2 newVelocity = (velocity1[i].Value * massData1[i].Value + velocity2[j].Value * massData2[j].Value) / mass;
+                        float3 newPos = (pos1 * massData1[i].Value + pos2 * massData2[j].Value) / mass;
 
-								float mass = massData1[i].Value + massData2[j].Value;
-								float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
-                                float2 newVelocity = (velocity1[i].Value * massData1[i].Value + velocity2[j].Value * massData2[j].Value) / mass;
-                                float3 newPos = (pos1 * massData1[i].Value + pos2 * massData1[j].Value) / mass;
+                        massData1[i] = new Mass { Value = mass };
+                        velocity1[i] = new Velocity { Value = newVelocity };
+                        radiusData1[i] = new Radius() { Value = newRadius };
+                        scaleData1[i] = new Scale { Value = newRadius * 2f };
 
-                                massData1[i] = new Mass { Value = mass };
-                                velocity1[i] = new Velocity { Value = newVelocity };
-                                radiusData1[i] = new Radius() { Value = newRadius };
-								scaleData1[i] = new Scale { Value = newRadius * 2f };
-
-								EntitiesToDestroy.TryAdd(del, del);
-							}
-						}
-					}
-					else // chunk1 has velocity, chunk2 does not
-					{
-						for (int i = 0; i < chunk1.Count; i++)
-						{
-							for (int j = 0; j < chunk2.Count; j++)
-							{
-
-							}
-						}
-					}
-				}
-				else
-				{
-					// chunk1 does not have velocity, chunk2 does
-					if (chunk2.Has(VelocityType))
-					{
-						NativeArray<Velocity> velocity2 = chunk2.GetNativeArray(VelocityType);
-
-						for (int i = 0; i < chunk1.Count; i++)
-						{
-							for (int j = 0; j < chunk2.Count; j++)
-							{
-
-							}
-						}
-					}
-					else // neither chunks have velocity
-					{
-						for (int i = 0; i < chunk1.Count; i++)
-						{
-							for (int j = 0; j < chunk2.Count; j++)
-							{
-
-							}
-						}
-					}
-				}
-			}
+                        EntitiesToDestroy.TryAdd(del, del);
+                    }
+                }
+            }
 
 			public void Execute()
 			{
