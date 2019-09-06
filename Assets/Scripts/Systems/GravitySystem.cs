@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
-    [UpdateBefore(typeof(CollideMergeSystem))]
+    [UpdateBefore(typeof(MovementSystem))]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class GravitySystem : JobComponentSystem
     {

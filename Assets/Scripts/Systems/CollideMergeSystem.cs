@@ -56,6 +56,7 @@ namespace QFSW.GravityDOTS
 			public ArchetypeChunkComponentType<Velocity> VelocityType;
 
 			public NativeHashMap<Entity, Entity> EntitiesToDestroy;
+            public EntityCommandBuffer DestructionBuffer;
 
             private void ExecuteChunks(ArchetypeChunk chunk1, ArchetypeChunk chunk2)
             {
@@ -104,6 +105,7 @@ namespace QFSW.GravityDOTS
                             scaleData1[i] = new Scale { Value = newRadius * 2f };
 
                             EntitiesToDestroy.TryAdd(del, del);
+                            DestructionBuffer.DestroyEntity(del);
                         }
                     }
                 }
@@ -126,15 +128,6 @@ namespace QFSW.GravityDOTS
 		protected override JobHandle OnUpdate(JobHandle inputDeps)
 		{
 			EntityCommandBuffer buffer = bufferSystem.CreateCommandBuffer();
-
-			using (NativeArray<Entity> arr = entitiesToDestroy.GetKeyArray(Allocator.Temp))
-			{
-				for (int i = 0; i < arr.Length; i++)
-				{
-					buffer.DestroyEntity(arr[i]);
-				}
-			}
-
 			NativeArray<ArchetypeChunk> chunks = particleQuery.CreateArchetypeChunkArray(Allocator.TempJob);
 
 			ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
@@ -158,7 +151,8 @@ namespace QFSW.GravityDOTS
 				ScaleType = scaleType,
 				VelocityType = velocityType,
 				EntitiesToDestroy = entitiesToDestroy,
-			};
+                DestructionBuffer = buffer
+            };
 
 			return job.Schedule(inputDeps);
 		}
