@@ -104,13 +104,14 @@ namespace QFSW.GravityDOTS
 								float distance = math.distancesq(pos1, pos2);
 								if (distance > rad * rad) continue;
 
-								velocity1[i] = new Velocity
-									{ Value = (velocity1[i].Value + velocity2[j].Value) / 2f };
-
 								float mass = massData1[i].Value + massData2[j].Value;
 								float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
-								massData1[i] = new Mass { Value = mass };
-								radiusData1[i] = new Radius() { Value = newRadius };
+                                float2 newVelocity = (velocity1[i].Value * massData1[i].Value + velocity2[j].Value * massData2[j].Value) / mass;
+                                float3 newPos = (pos1 * massData1[i].Value + pos2 * massData1[j].Value) / mass;
+
+                                massData1[i] = new Mass { Value = mass };
+                                velocity1[i] = new Velocity { Value = newVelocity };
+                                radiusData1[i] = new Radius() { Value = newRadius };
 								scaleData1[i] = new Scale { Value = newRadius * 2f };
 
 								EntitiesToDestroy.TryAdd(del, del);
