@@ -39,8 +39,50 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy.Dispose();
 		}
 
+		private struct CollideMergeJob : IJobForEachWithEntity<Translation, Velocity, Mass, Radius>
+		{
+			public float ParticleDensity;
+
+			public NativeArray<ArchetypeChunk> Chunks;
+
+			[ReadOnly]
+			public ArchetypeChunkEntityType EntityType;
+
+			[ReadOnly]
+			public ArchetypeChunkComponentType<Translation> PositionType;
+
+			[ReadOnly]
+			public ArchetypeChunkComponentType<Mass> MassType;
+
+			[ReadOnly]
+			public ArchetypeChunkComponentType<Radius> RadiusType;
+
+			[ReadOnly]
+			public ArchetypeChunkComponentType<Velocity> VelocityType;
+
+
+			public void Execute(Entity entity, int index, [ReadOnly] ref Translation pos, [ReadOnly] ref Velocity vel,
+				[ReadOnly] ref Mass mass, [ReadOnly] ref Radius rad)
+			{
+				for (int c = 0; c < Chunks.Length; c++)
+				{
+					ArchetypeChunk chunk = Chunks[c];
+
+					NativeArray<Translation> positionData = chunk.GetNativeArray(PositionType);
+					NativeArray<Mass> massData = chunk.GetNativeArray(MassType);
+					NativeArray<Radius> radiusData = chunk.GetNativeArray(RadiusType);
+					NativeArray<Velocity> velocityData = chunk.GetNativeArray(VelocityType);
+
+					for (int i = 0; i < chunk.Count; i++)
+					{
+
+					}
+				}
+			}
+		}
+
 		[BurstCompile]
-		private struct CollideMergeJob : IJob
+		private struct CollideMergeJobOld : IJob
 		{
 			public float ParticleDensity;
 
@@ -139,16 +181,15 @@ namespace QFSW.GravityDOTS
 			NativeArray<ArchetypeChunk> chunks = particleQuery.CreateArchetypeChunkArray(Allocator.TempJob);
 
 			ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-			ArchetypeChunkComponentType<Translation> transformType = GetArchetypeChunkComponentType<Translation>(false);
-			ArchetypeChunkComponentType<Mass> massType = GetArchetypeChunkComponentType<Mass>(false);
-			ArchetypeChunkComponentType<Radius> radiusType = GetArchetypeChunkComponentType<Radius>(false);
-			ArchetypeChunkComponentType<Scale> scaleType = GetArchetypeChunkComponentType<Scale>(false);
-
-			ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(false);
+			ArchetypeChunkComponentType<Translation> transformType = GetArchetypeChunkComponentType<Translation>(true);
+			ArchetypeChunkComponentType<Mass> massType = GetArchetypeChunkComponentType<Mass>(true);
+			ArchetypeChunkComponentType<Radius> radiusType = GetArchetypeChunkComponentType<Radius>(true);
+			ArchetypeChunkComponentType<Scale> scaleType = GetArchetypeChunkComponentType<Scale>(true);
+			ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(true);
 
 			entitiesToDestroy.Clear();
 
-			CollideMergeJob job = new CollideMergeJob
+			CollideMergeJob jobOld = new CollideMergeJob
 			{
 				ParticleDensity = ParticleDensity,
 				Chunks = chunks,
@@ -156,12 +197,10 @@ namespace QFSW.GravityDOTS
 				PositionType = transformType,
 				MassType = massType,
 				RadiusType = radiusType,
-				ScaleType = scaleType,
 				VelocityType = velocityType,
-				EntitiesToDestroy = entitiesToDestroy,
 			};
 
-			return job.Schedule(inputDeps);
+			return jobOld.Schedule(this, inputDeps);
 		}
 	}
 }

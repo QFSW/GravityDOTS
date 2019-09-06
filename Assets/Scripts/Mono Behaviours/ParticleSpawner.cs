@@ -12,7 +12,9 @@ using Random = Unity.Mathematics.Random;
 namespace QFSW.GravityDOTS
 {
     public class ParticleSpawner : MonoBehaviour
-    {
+    {    
+        public static EntityArchetype ParticleType;
+
         [SerializeField] private int _particleCount = 100;
         [SerializeField] private float _spawnRate = 100;
 
@@ -26,8 +28,7 @@ namespace QFSW.GravityDOTS
 
         private float _remainingParticleSpawns;
         private EntityManager _entityManager;
-        private EntityArchetype _particleType;
-
+    
         private void Awake()
         {
             ComponentType[] particleComponents =
@@ -44,7 +45,7 @@ namespace QFSW.GravityDOTS
             };
 
             _entityManager = World.Active.EntityManager;
-            _particleType = _entityManager.CreateArchetype(particleComponents);
+            ParticleType = _entityManager.CreateArchetype(particleComponents);
 
             World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
 
@@ -80,7 +81,7 @@ namespace QFSW.GravityDOTS
             RenderBounds bounds = new RenderBounds { Value = { Extents = new float3(1, 1, 1) } };
 
             NativeArray<Entity> particles = new NativeArray<Entity>(count, Allocator.TempJob);
-            _entityManager.CreateEntity(_particleType, particles);
+            _entityManager.CreateEntity(ParticleType, particles);
 
             Random r = new Random((uint)(1 + count + Time.time * 1000));
 
