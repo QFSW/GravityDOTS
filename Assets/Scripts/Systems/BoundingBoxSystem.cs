@@ -18,20 +18,32 @@ namespace QFSW.GravityDOTS
             public float2 BoundsX;
             public float2 BoundsY;
 
-            public void Execute(ref Velocity velocity, [ReadOnly] ref Translation transform,
+            public void Execute(ref Velocity velocity, ref Translation position,
                 [ReadOnly] ref Radius radius, [ReadOnly] ref Bounded bounded)
             {
-                float2 pos = transform.Value.xy;
+                float2 pos = position.Value.xy;
                 float r = radius.Value;
 
-                if (pos.y < BoundsY.x + r || pos.y > BoundsY.y - r)
+                if (pos.x < BoundsX.x + r)
                 {
-                    velocity.Value = new float2(velocity.Value.x, -velocity.Value.y);
+                    position.Value = new float3(BoundsX.x + r, pos.y, 0);
+                    velocity.Value = new float2(-velocity.Value.x, velocity.Value.y);
+                }
+                else if (pos.x > BoundsX.y - r)
+                {
+                    position.Value = new float3(BoundsX.y - r, pos.y, 0);
+                    velocity.Value = new float2(-velocity.Value.x, velocity.Value.y);
                 }
 
-                if (pos.x < BoundsX.x + r || pos.x > BoundsX.y - r)
+                if (pos.y < BoundsY.x + r)
                 {
-                    velocity.Value = new float2(-velocity.Value.x, velocity.Value.y);
+                    position.Value = new float3(pos.x, BoundsY.x + r, 0);
+                    velocity.Value = new float2(velocity.Value.x, -velocity.Value.y);
+                }
+                else if (pos.y > BoundsY.y - r)
+                {
+                    position.Value = new float3(pos.x, BoundsY.y - r, 0);
+                    velocity.Value = new float2(velocity.Value.x, -velocity.Value.y);
                 }
             }
         }
