@@ -13,24 +13,18 @@ namespace QFSW.GravityDOTS
 {
     public class ParticleSpawner : MonoBehaviour
     {
-        [SerializeField]
-        private int _particleCount = 100;
+        [SerializeField] private int _particleCount = 100;
+        [SerializeField] private float _spawnRate = 100;
 
-        [SerializeField]
-        private float _particleMaxSpeed = 3;
+        [SerializeField] private float _particleMaxSpeed = 3;
+        [SerializeField] private float2 _particleMass = new float2(100, 1000);
 
-        [SerializeField]
-        private float2 _particleMass = new float2(100, 1000);
+        [SerializeField] private float _particleDensity = 1;
 
-        [SerializeField]
-        private float _particleDensity = 1;
+        [SerializeField] private Material _particleMaterial;
+        [SerializeField] private Mesh _particleMesh;
 
-        [SerializeField]
-        private Material _particleMaterial;
-
-        [SerializeField]
-        private Mesh _particleMesh;
-
+        private float _remainingParticleSpawns;
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
 
@@ -57,6 +51,18 @@ namespace QFSW.GravityDOTS
             SpawnParticles(_particleCount);
         }
 
+        private void Update()
+        {
+            _remainingParticleSpawns += Time.deltaTime * _spawnRate;
+            if (_remainingParticleSpawns > 1)
+            {
+                int spawnCount = (int)_remainingParticleSpawns;
+                _remainingParticleSpawns -= spawnCount;
+
+                SpawnParticles(spawnCount);
+            }
+        }
+
         [BurstCompile]
         private void SpawnParticles(int count)
         {
@@ -76,7 +82,7 @@ namespace QFSW.GravityDOTS
             NativeArray<Entity> particles = new NativeArray<Entity>(count, Allocator.TempJob);
             _entityManager.CreateEntity(_particleType, particles);
 
-            Random r = new Random((uint)count + 1);
+            Random r = new Random((uint)(1 + count + Time.time * 1000));
 
             float2 minVal = new float2(-_particleMaxSpeed, -_particleMaxSpeed);
             float2 maxVel = new float2(_particleMaxSpeed, _particleMaxSpeed);
