@@ -25,7 +25,6 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy = new NativeHashMap<Entity, Entity>(1024, Allocator.Persistent);
 
 			particleQuery = GetEntityQuery(
-				//ComponentType.ReadOnly<ParticleTag>(),
 				ComponentType.ReadOnly<Translation>(),
 				ComponentType.ReadOnly<Bounded>(),
                 typeof(Velocity),
@@ -44,7 +43,6 @@ namespace QFSW.GravityDOTS
 		private struct CollideMergeJob : IJob
 		{
 			public float ParticleDensity;
-			public float DeltaTime;
 
 			[DeallocateOnJobCompletion]
 			public NativeArray<ArchetypeChunk> Chunks;
@@ -78,7 +76,6 @@ namespace QFSW.GravityDOTS
                 NativeArray<Entity> entityData2 = chunk2.GetNativeArray(EntityType);
                 NativeArray<Velocity> velocity2 = chunk2.GetNativeArray(VelocityType);
 
-
                 for (int i = 0; i < chunk1.Count; i++)
                 {
                     Entity current = entityData1[i];
@@ -97,19 +94,20 @@ namespace QFSW.GravityDOTS
                         float rad = radiusData2[j].Value + rad1;
 
                         float distance = math.distancesq(pos1, pos2);
-                        if (distance > rad * rad) continue;
+                        if (distance < rad * rad)
+                        {
+                            float mass = massData1[i].Value + massData2[j].Value;
+                            float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
+                            float2 newVelocity = (velocity1[i].Value * massData1[i].Value + velocity2[j].Value * massData2[j].Value) / mass;
+                            float3 newPos = (pos1 * massData1[i].Value + pos2 * massData2[j].Value) / mass;
 
-                        float mass = massData1[i].Value + massData2[j].Value;
-                        float newRadius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
-                        float2 newVelocity = (velocity1[i].Value * massData1[i].Value + velocity2[j].Value * massData2[j].Value) / mass;
-                        float3 newPos = (pos1 * massData1[i].Value + pos2 * massData2[j].Value) / mass;
+                            massData1[i] = new Mass { Value = mass };
+                            velocity1[i] = new Velocity { Value = newVelocity };
+                            radiusData1[i] = new Radius() { Value = newRadius };
+                            scaleData1[i] = new Scale { Value = newRadius * 2f };
 
-                        massData1[i] = new Mass { Value = mass };
-                        velocity1[i] = new Velocity { Value = newVelocity };
-                        radiusData1[i] = new Radius() { Value = newRadius };
-                        scaleData1[i] = new Scale { Value = newRadius * 2f };
-
-                        EntitiesToDestroy.TryAdd(del, del);
+                            EntitiesToDestroy.TryAdd(del, del);
+                        }
                     }
                 }
             }
@@ -154,7 +152,6 @@ namespace QFSW.GravityDOTS
 
 			CollideMergeJob job = new CollideMergeJob
 			{
-				DeltaTime = Time.deltaTime,
 				ParticleDensity = ParticleDensity,
 				Chunks = chunks,
 				EntityType = entityType,
