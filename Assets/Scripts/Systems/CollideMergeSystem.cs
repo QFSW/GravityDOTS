@@ -25,8 +25,8 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy = new NativeHashMap<Entity, Entity>(1024, Allocator.Persistent);
 
 			particleQuery = GetEntityQuery(
-				ComponentType.ReadOnly<Translation>(),
 				ComponentType.ReadOnly<Bounded>(),
+                typeof(Translation),
                 typeof(Velocity),
 				typeof(Mass),
 				typeof(Radius),
@@ -50,13 +50,10 @@ namespace QFSW.GravityDOTS
 			[ReadOnly]
 			public ArchetypeChunkEntityType EntityType;
 
-			[ReadOnly]
 			public ArchetypeChunkComponentType<Translation> PositionType;
-
 			public ArchetypeChunkComponentType<Mass> MassType;
 			public ArchetypeChunkComponentType<Radius> RadiusType;
 			public ArchetypeChunkComponentType<Scale> ScaleType;
-
 			public ArchetypeChunkComponentType<Velocity> VelocityType;
 
 			public NativeHashMap<Entity, Entity> EntitiesToDestroy;
@@ -103,6 +100,7 @@ namespace QFSW.GravityDOTS
 
                             massData1[i] = new Mass { Value = mass };
                             velocity1[i] = new Velocity { Value = newVelocity };
+                            transformData1[i] = new Translation { Value = newPos };
                             radiusData1[i] = new Radius() { Value = newRadius };
                             scaleData1[i] = new Scale { Value = newRadius * 2f };
 
@@ -141,7 +139,7 @@ namespace QFSW.GravityDOTS
 			NativeArray<ArchetypeChunk> chunks = particleQuery.CreateArchetypeChunkArray(Allocator.TempJob);
 
 			ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
-			ArchetypeChunkComponentType<Translation> transformType = GetArchetypeChunkComponentType<Translation>(true);
+			ArchetypeChunkComponentType<Translation> transformType = GetArchetypeChunkComponentType<Translation>(false);
 			ArchetypeChunkComponentType<Mass> massType = GetArchetypeChunkComponentType<Mass>(false);
 			ArchetypeChunkComponentType<Radius> radiusType = GetArchetypeChunkComponentType<Radius>(false);
 			ArchetypeChunkComponentType<Scale> scaleType = GetArchetypeChunkComponentType<Scale>(false);
