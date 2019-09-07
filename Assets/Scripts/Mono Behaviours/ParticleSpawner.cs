@@ -7,6 +7,10 @@ using Unity.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+#if !QC_DISABLE
+using QFSW.QC;
+#endif
+
 using Random = Unity.Mathematics.Random;
 
 namespace QFSW.GravityDOTS
@@ -14,6 +18,10 @@ namespace QFSW.GravityDOTS
     public class ParticleSpawner : MonoBehaviour
     {
         [SerializeField] private int _particleCount = 100;
+
+#if !QC_DISABLE
+        [Command("particles.spawn-rate")]
+#endif
         [SerializeField] private float _spawnRate = 100;
 
         [SerializeField] private float _particleMaxSpeed = 3;
@@ -63,6 +71,10 @@ namespace QFSW.GravityDOTS
             }
         }
 
+
+#if !QC_DISABLE
+        [Command("particles.spawn")]
+#endif
         [BurstCompile]
         private void SpawnParticles(int count)
         {
