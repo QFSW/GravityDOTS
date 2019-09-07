@@ -15,12 +15,15 @@ using Random = Unity.Mathematics.Random;
 
 namespace QFSW.GravityDOTS
 {
+#if !QC_DISABLE
+    [CommandPrefix("particles.")]
+#endif
     public class ParticleSpawner : MonoBehaviour
     {
         [SerializeField] private int _particleCount = 100;
 
 #if !QC_DISABLE
-        [Command("particles.spawn-rate")]
+        [Command("spawn-rate")]
 #endif
         [SerializeField] private float _spawnRate = 100;
 
@@ -35,10 +38,11 @@ namespace QFSW.GravityDOTS
         private float _remainingParticleSpawns;
         private EntityManager _entityManager;
         private EntityArchetype _particleType;
+        private ComponentType[] _particleComponents;
 
         private void Awake()
         {
-            ComponentType[] particleComponents =
+            _particleComponents = new ComponentType[]
             {
                 typeof(LocalToWorld),
                 typeof(Translation),
@@ -52,7 +56,7 @@ namespace QFSW.GravityDOTS
             };
 
             _entityManager = World.Active.EntityManager;
-            _particleType = _entityManager.CreateArchetype(particleComponents);
+            _particleType = _entityManager.CreateArchetype(_particleComponents);
 
             World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
 
@@ -73,7 +77,7 @@ namespace QFSW.GravityDOTS
 
 
 #if !QC_DISABLE
-        [Command("particles.spawn")]
+        [Command("spawn")]
 #endif
         [BurstCompile]
         private void SpawnParticles(int count)
@@ -119,6 +123,14 @@ namespace QFSW.GravityDOTS
             }
 
             particles.Dispose();
+        }
+
+#if !QC_DISABLE
+        [Command("count")]
+#endif
+        private int GetParticleCount()
+        {
+            return _entityManager.CreateEntityQuery(_particleComponents).CalculateEntityCount();
         }
     }
 }

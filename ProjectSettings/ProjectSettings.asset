@@ -523,7 +523,7 @@ PlayerSettings:
     1: QC_TMP
   platformArchitecture: {}
   scriptingBackend:
-    Standalone: 0
+    Standalone: 1
   il2cppCompilerConfiguration:
     Standalone: 2
   managedStrippingLevel:
