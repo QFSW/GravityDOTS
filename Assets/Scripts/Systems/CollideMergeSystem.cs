@@ -39,6 +39,7 @@ namespace QFSW.GravityDOTS
 			entitiesToDestroy.Dispose();
 		}
 
+		[BurstCompile]
 		private struct CollideMergeJob : IJobForEachWithEntity<Translation, Velocity, Mass, Radius>
 		{
 			public float ParticleDensity;
@@ -75,7 +76,7 @@ namespace QFSW.GravityDOTS
 
 					for (int i = 0; i < chunk.Count; i++)
 					{
-
+						
 					}
 				}
 			}

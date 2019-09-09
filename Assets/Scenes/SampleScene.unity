@@ -247,8 +247,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c40e4bf4f752d4102a413f060def32c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _particleCount: 100
-  _spawnRate: 100
+  _particleCount: 500
+  _spawnRate: 0
   _particleMaxSpeed: 25
   _particleMass:
     x: 75

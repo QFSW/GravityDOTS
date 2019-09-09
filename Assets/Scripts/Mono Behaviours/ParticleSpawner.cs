@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -12,23 +13,33 @@ using Random = Unity.Mathematics.Random;
 namespace QFSW.GravityDOTS
 {
     public class ParticleSpawner : MonoBehaviour
-    {    
+    {
         public static EntityArchetype ParticleType;
 
-        [SerializeField] private int _particleCount = 100;
-        [SerializeField] private float _spawnRate = 100;
+        [SerializeField]
+        private int _particleCount = 100;
 
-        [SerializeField] private float _particleMaxSpeed = 3;
-        [SerializeField] private float2 _particleMass = new float2(100, 1000);
+        [SerializeField]
+        private float _spawnRate = 100;
 
-        [SerializeField] private float _particleDensity = 1;
+        [SerializeField]
+        private float _particleMaxSpeed = 3;
 
-        [SerializeField] private Material _particleMaterial;
-        [SerializeField] private Mesh _particleMesh;
+        [SerializeField]
+        private float2 _particleMass = new float2(100, 1000);
+
+        [SerializeField]
+        private float _particleDensity = 1;
+
+        [SerializeField]
+        private Material _particleMaterial;
+
+        [SerializeField]
+        private Mesh _particleMesh;
 
         private float _remainingParticleSpawns;
         private EntityManager _entityManager;
-    
+
         private void Awake()
         {
             ComponentType[] particleComponents =
@@ -48,19 +59,43 @@ namespace QFSW.GravityDOTS
             ParticleType = _entityManager.CreateArchetype(particleComponents);
 
             World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
+            SpawnParticlesSystem spawnParticlesSystem = World.Active.GetOrCreateSystem<SpawnParticlesSystem>();
+            spawnParticlesSystem.ParticleType = ParticleType;
+            spawnParticlesSystem.SpawnRate = _spawnRate;
+            spawnParticlesSystem.SpawnRate = _spawnRate;
+            spawnParticlesSystem.ParticleDensity = _particleDensity;
+            spawnParticlesSystem.ParticleMass = _particleMass;
+            spawnParticlesSystem.RenderMesh = new RenderMesh
+            {
+                mesh = _particleMesh,
+                material = _particleMaterial,
+                castShadows = ShadowCastingMode.Off,
+                receiveShadows = false
+            };
+            spawnParticlesSystem.SpawnRate = _spawnRate;
+            spawnParticlesSystem.ParticleMaxSpeed = _particleMaxSpeed;
 
             SpawnParticles(_particleCount);
         }
 
-        private void Update()
+        private void OnValidate()
         {
-            _remainingParticleSpawns += Time.deltaTime * _spawnRate;
-            if (_remainingParticleSpawns > 1)
+            if (Application.isPlaying)
             {
-                int spawnCount = (int)_remainingParticleSpawns;
-                _remainingParticleSpawns -= spawnCount;
-
-                SpawnParticles(spawnCount);
+                World.Active.GetExistingSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
+                SpawnParticlesSystem spawnParticlesSystem = World.Active.GetExistingSystem<SpawnParticlesSystem>();
+                spawnParticlesSystem.SpawnRate = _spawnRate;
+                spawnParticlesSystem.ParticleDensity = _particleDensity;
+                spawnParticlesSystem.ParticleMass = _particleMass;
+                spawnParticlesSystem.RenderMesh = new RenderMesh
+                {
+                    mesh = _particleMesh,
+                    material = _particleMaterial,
+                    castShadows = ShadowCastingMode.Off,
+                    receiveShadows = false
+                };
+                spawnParticlesSystem.SpawnRate = _spawnRate;
+                spawnParticlesSystem.ParticleMaxSpeed = _particleMaxSpeed;
             }
         }
 
@@ -104,7 +139,6 @@ namespace QFSW.GravityDOTS
                 _entityManager.SetComponentData(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
                 _entityManager.SetComponentData(particle, new Radius() { Value = radius });
                 _entityManager.SetComponentData(particle, new Scale() { Value = scale });
-
             }
 
             particles.Dispose();
