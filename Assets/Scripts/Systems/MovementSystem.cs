@@ -8,10 +8,10 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
-    [BurstCompile]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class MovementSystem : JobComponentSystem
     {
+        [BurstCompile]
         private struct MovementJob : IJobForEach<Velocity, Translation>
         {
             public float DeltaTime;
