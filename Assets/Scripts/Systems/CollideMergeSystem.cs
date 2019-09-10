@@ -32,7 +32,6 @@ namespace QFSW.GravityDOTS
 			);
 		}
 
-		[BurstCompile]
 		private struct CollideMergeJob : IJobParallelFor
 		{
 			public Entity ParticlePrefab;
