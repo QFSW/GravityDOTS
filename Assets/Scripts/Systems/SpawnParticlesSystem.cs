@@ -29,7 +29,7 @@ namespace QFSW.GravityDOTS
 
 		protected override void OnCreate()
 		{
-			_bufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+			_bufferSystem = World.GetExistingSystem<FixedSimulationEntityCommandBufferSystem>();
 		}
 
 		protected override void OnUpdate()

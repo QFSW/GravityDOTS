@@ -17,11 +17,11 @@ namespace QFSW.GravityDOTS
 
 		private EntityQuery particleQuery;
 
-		private EndSimulationEntityCommandBufferSystem bufferSystem;
+		private EntityCommandBufferSystem bufferSystem;
 
 		protected override void OnCreate()
 		{
-			bufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
+			bufferSystem = World.GetOrCreateSystem<FixedSimulationEntityCommandBufferSystem>();
 
 			particleQuery = GetEntityQuery(
 				ComponentType.ReadOnly<Bounded>(),
@@ -57,8 +57,9 @@ namespace QFSW.GravityDOTS
 
 			public EntityCommandBuffer.Concurrent Buffer;
 
-			public static ConcurrentDictionary<Entity, Entity> EntitiesToDestroy = new ConcurrentDictionary<Entity, Entity>();
-			
+			public static ConcurrentDictionary<Entity, Entity> EntitiesToDestroy =
+				new ConcurrentDictionary<Entity, Entity>();
+
 			private void ExecuteChunks(int index, ArchetypeChunk chunk1, ArchetypeChunk chunk2)
 			{
 				NativeArray<Entity> entityData1 = chunk1.GetNativeArray(EntityType);
@@ -110,7 +111,7 @@ namespace QFSW.GravityDOTS
 
 							EntitiesToDestroy.TryAdd(entity1, entity1);
 							EntitiesToDestroy.TryAdd(entity2, entity2);
-							
+
 							Buffer.DestroyEntity(index, entity1);
 							Buffer.DestroyEntity(index, entity2);
 						}
@@ -143,7 +144,7 @@ namespace QFSW.GravityDOTS
 			ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(true);
 
 			CollideMergeJob.EntitiesToDestroy.Clear();
-			
+
 			CollideMergeJob job = new CollideMergeJob
 			{
 				ParticlePrefab = World.GetExistingSystem<SpawnParticlesSystem>().ParticlePrefab,

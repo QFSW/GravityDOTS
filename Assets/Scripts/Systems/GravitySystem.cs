@@ -1,4 +1,5 @@
-﻿using Unity.Burst;
+﻿using System;
+using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
@@ -8,10 +9,11 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
-    [UpdateAfter(typeof(CollideMergeSystem))]
+    [UpdateBefore(typeof(CollideMergeSystem))]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class GravitySystem : JobComponentSystem
     {
+        public const float Scale = 10E9f;
         public const float G = 6.6743015E-11f;
 
         // Each instance of the job call is an attractee
@@ -35,11 +37,12 @@ namespace QFSW.GravityDOTS
                 for (int i = 0; i < AttractorCount; i++)
                 {
                     float2 posdelta = (AttractorPosition[i].Value - position.Value).xy;
-                    if (!(posdelta.x == 0 && posdelta.y == 0))
+                    
+                    if (math.all(math.abs(posdelta) > 0.0001f))
                     {
                         float distsq = posdelta.x * posdelta.x + posdelta.y * posdelta.y;
                         float distinv = math.rsqrt(distsq);
-                        float fmag = G * mass.Value * AttractorMass[i].Value / distsq;
+                        float fmag = Scale * G * mass.Value * AttractorMass[i].Value / distsq;
                         float2 dir = (AttractorPosition[i].Value - position.Value).xy * distinv;
                         float2 force = dir * fmag;
                         totalForce += force;

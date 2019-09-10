@@ -93,7 +93,7 @@ namespace QFSW.GravityDOTS
             spawnParticlesSystem.ParticleMaxSpeed = _particleMaxSpeed;
 
             spawnParticlesSystem.SpawnParticles(
-                World.Active.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>().CreateCommandBuffer(),
+                World.Active.GetOrCreateSystem<FixedSimulationEntityCommandBufferSystem>().CreateCommandBuffer(),
                 _particleCount);
         }
 
