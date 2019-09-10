@@ -20,12 +20,15 @@ namespace QFSW.GravityDOTS
 #endif
     public class ParticleSpawner : MonoBehaviour
     {
-        [SerializeField] private int _particleCount = 100;
+        [SerializeField]
+        private int _particleCount = 100;
 
 #if !QC_DISABLE
         [Command("spawn-rate")]
 #endif
-        [SerializeField] private float _spawnRate = 100;
+        [SerializeField]
+        private float _spawnRate = 100;
+
         public static EntityArchetype ParticleType;
 
         [SerializeField]
@@ -47,6 +50,9 @@ namespace QFSW.GravityDOTS
         private EntityManager _entityManager;
         private ComponentType[] _particleComponents;
 
+        private Entity _particlePrefab;
+        private RenderMesh _renderMesh;
+
         private void Awake()
         {
             _particleComponents = new ComponentType[]
@@ -65,24 +71,30 @@ namespace QFSW.GravityDOTS
             _entityManager = World.Active.EntityManager;
             ParticleType = _entityManager.CreateArchetype(_particleComponents);
 
-            World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
-            SpawnParticlesSystem spawnParticlesSystem = World.Active.GetOrCreateSystem<SpawnParticlesSystem>();
-            spawnParticlesSystem.ParticleType = ParticleType;
-            spawnParticlesSystem.SpawnRate = _spawnRate;
-            spawnParticlesSystem.SpawnRate = _spawnRate;
-            spawnParticlesSystem.ParticleDensity = _particleDensity;
-            spawnParticlesSystem.ParticleMass = _particleMass;
-            spawnParticlesSystem.RenderMesh = new RenderMesh
+            _renderMesh = new RenderMesh
             {
                 mesh = _particleMesh,
                 material = _particleMaterial,
                 castShadows = ShadowCastingMode.Off,
                 receiveShadows = false
             };
+
+            _particlePrefab = _entityManager.CreateEntity(ParticleType);
+            _entityManager.AddComponent(_particlePrefab, typeof(Prefab));
+            _entityManager.SetComponentData(_particlePrefab, SpawnParticlesSystem.Bounds);
+            _entityManager.SetSharedComponentData(_particlePrefab, _renderMesh);
+
+            World.Active.GetOrCreateSystem<CollideMergeSystem>().ParticleDensity = _particleDensity;
+            SpawnParticlesSystem spawnParticlesSystem = World.Active.GetOrCreateSystem<SpawnParticlesSystem>();
+            spawnParticlesSystem.ParticlePrefab = _particlePrefab;
+            spawnParticlesSystem.ParticleDensity = _particleDensity;
+            spawnParticlesSystem.ParticleMass = _particleMass;
             spawnParticlesSystem.SpawnRate = _spawnRate;
             spawnParticlesSystem.ParticleMaxSpeed = _particleMaxSpeed;
 
-            SpawnParticles(_particleCount);
+            spawnParticlesSystem.SpawnParticles(
+                World.Active.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>().CreateCommandBuffer(),
+                _particleCount);
         }
 
         private void OnValidate()
@@ -94,67 +106,10 @@ namespace QFSW.GravityDOTS
                 spawnParticlesSystem.SpawnRate = _spawnRate;
                 spawnParticlesSystem.ParticleDensity = _particleDensity;
                 spawnParticlesSystem.ParticleMass = _particleMass;
-                spawnParticlesSystem.RenderMesh = new RenderMesh
-                {
-                    mesh = _particleMesh,
-                    material = _particleMaterial,
-                    castShadows = ShadowCastingMode.Off,
-                    receiveShadows = false
-                };
-                spawnParticlesSystem.SpawnRate = _spawnRate;
                 spawnParticlesSystem.ParticleMaxSpeed = _particleMaxSpeed;
             }
         }
-
-
-#if !QC_DISABLE
-        [Command("spawn")]
-#endif
-        [BurstCompile]
-        private void SpawnParticles(int count)
-        {
-            float2 bottomLeft = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(0, 0));
-            float2 topRight = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
-
-            RenderMesh rm = new RenderMesh
-            {
-                mesh = _particleMesh,
-                material = _particleMaterial,
-                castShadows = ShadowCastingMode.Off,
-                receiveShadows = false
-            };
-
-            RenderBounds bounds = new RenderBounds { Value = { Extents = new float3(1, 1, 1) } };
-
-            NativeArray<Entity> particles = new NativeArray<Entity>(count, Allocator.TempJob);
-            _entityManager.CreateEntity(ParticleType, particles);
-
-            Random r = new Random((uint)(1 + count + Time.time * 1000));
-
-            float2 minVal = new float2(-_particleMaxSpeed, -_particleMaxSpeed);
-            float2 maxVel = new float2(_particleMaxSpeed, _particleMaxSpeed);
-
-            for (int i = 0; i < particles.Length; i++)
-            {
-                float mass = r.NextFloat(_particleMass.x, _particleMass.y);
-                float radius = math.pow(3 / (4 * math.PI) * mass / _particleDensity, 1f / 3f);
-                float scale = radius * 2f;
-
-                Translation pos = new Translation() { Value = new float3(r.NextFloat2(bottomLeft, topRight), 0f) };
-
-                Entity particle = particles[i];
-                _entityManager.SetComponentData(particle, pos);
-                _entityManager.SetComponentData(particle, bounds);
-                _entityManager.SetSharedComponentData(particle, rm);
-                _entityManager.SetComponentData(particle, new Mass() { Value = mass });
-                _entityManager.SetComponentData(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
-                _entityManager.SetComponentData(particle, new Radius() { Value = radius });
-                _entityManager.SetComponentData(particle, new Scale() { Value = scale });
-            }
-
-            particles.Dispose();
-        }
-
+        
 #if !QC_DISABLE
         [Command("count")]
 #endif
