@@ -11,7 +11,7 @@ namespace QFSW.GravityDOTS
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class MovementSystem : JobComponentSystem
     {
-        [BurstCompile]
+		[BurstCompile]
         private struct MovementJob : IJobForEach<Velocity, Translation>
         {
             public float DeltaTime;

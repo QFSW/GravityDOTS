@@ -1,3 +1,5 @@
+using QFSW.QC;
+using Unity.Burst;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
@@ -9,10 +11,8 @@ namespace QFSW.GravityDOTS
 {
 	public class SpawnParticlesSystem : ComponentSystem
 	{
-		public EntityArchetype ParticleType;
+		public Entity ParticlePrefab;
 
-		public RenderMesh RenderMesh;
-		
 		public float SpawnRate;
 
 		public float ParticleMaxSpeed;
@@ -20,13 +20,13 @@ namespace QFSW.GravityDOTS
 		public float2 ParticleMass;
 
 		public float ParticleDensity;
-		
+
 		private float _remainingParticleSpawns;
-				
+
 		private EntityCommandBufferSystem _bufferSystem;
-		
-		private static readonly RenderBounds Bounds = new RenderBounds { Value = { Extents = new float3(1, 1, 1) } };
-		
+
+		public static readonly RenderBounds Bounds = new RenderBounds { Value = { Extents = new float3(1, 1, 1) } };
+
 		protected override void OnCreate()
 		{
 			_bufferSystem = World.GetExistingSystem<EndSimulationEntityCommandBufferSystem>();
@@ -46,13 +46,17 @@ namespace QFSW.GravityDOTS
 			}
 		}
 
-		private void SpawnParticles(EntityCommandBuffer buffer, int count)
+#if !QC_DISABLE
+		[Command("spawn")]
+#endif
+		[BurstCompile]
+		public void SpawnParticles(EntityCommandBuffer buffer, int count)
 		{
 			float2 bottomLeft = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(0, 0));
 			float2 topRight = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
-			
+
 			Random r = new Random((uint)(1 + count + Time.time * 1000));
-			
+
 			float2 minVal = new float2(-ParticleMaxSpeed, -ParticleMaxSpeed);
 			float2 maxVel = new float2(ParticleMaxSpeed, ParticleMaxSpeed);
 
@@ -64,14 +68,13 @@ namespace QFSW.GravityDOTS
 
 				Translation pos = new Translation() { Value = new float3(r.NextFloat2(bottomLeft, topRight), 0f) };
 
-				Entity particle = buffer.CreateEntity(ParticleType);
+				Entity particle = buffer.Instantiate(ParticlePrefab);
+
 				buffer.SetComponent(particle, pos);
-				buffer.SetComponent(particle, Bounds);
-				buffer.SetComponent(particle, new Mass() { Value = mass });
-				buffer.SetComponent(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
-				buffer.SetComponent(particle, new Radius() { Value = radius });
 				buffer.SetComponent(particle, new Scale() { Value = scale });
-				buffer.SetSharedComponent(particle, RenderMesh);
+				buffer.SetComponent(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
+				buffer.SetComponent(particle, new Mass() { Value = mass });
+				buffer.SetComponent(particle, new Radius() { Value = radius });
 			}
 		}
 	}

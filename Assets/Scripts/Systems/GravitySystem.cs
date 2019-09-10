@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace QFSW.GravityDOTS
 {
-    [UpdateBefore(typeof(MovementSystem))]
+    [UpdateAfter(typeof(CollideMergeSystem))]
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class GravitySystem : JobComponentSystem
     {
@@ -17,7 +17,7 @@ namespace QFSW.GravityDOTS
         // Each instance of the job call is an attractee
         // The inner loop handles attractors
         // This removes the race condition
-        [BurstCompile]
+		[BurstCompile]
         private struct GravityJob : IJobForEach<Mass, Translation, Velocity>
         {
             public int AttractorCount;
