@@ -1,3 +1,4 @@
+using System;
 using QFSW.QC;
 using Unity.Burst;
 using Unity.Entities;
@@ -9,6 +10,7 @@ using Random = Unity.Mathematics.Random;
 
 namespace QFSW.GravityDOTS
 {
+	[UpdateInGroup(typeof(FixedSimulationSystemGroup))]
 	public class SpawnParticlesSystem : ComponentSystem
 	{
 		public Entity ParticlePrefab;
@@ -27,9 +29,12 @@ namespace QFSW.GravityDOTS
 
 		public static readonly RenderBounds Bounds = new RenderBounds { Value = { Extents = new float3(1, 1, 1) } };
 
+		private Random _random;
+
 		protected override void OnCreate()
 		{
 			_bufferSystem = World.GetExistingSystem<FixedSimulationEntityCommandBufferSystem>();
+			_random = new Random((uint)(new DateTimeOffset(DateTime.Now).ToUnixTimeMilliseconds()));
 		}
 
 		protected override void OnUpdate()
@@ -55,26 +60,57 @@ namespace QFSW.GravityDOTS
 			float2 bottomLeft = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(0, 0));
 			float2 topRight = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
 
-			Random r = new Random((uint)(1 + count + Time.time * 1000));
-
 			float2 minVal = new float2(-ParticleMaxSpeed, -ParticleMaxSpeed);
 			float2 maxVel = new float2(ParticleMaxSpeed, ParticleMaxSpeed);
 
 			for (int i = 0; i < count; ++i)
 			{
-				float mass = r.NextFloat(ParticleMass.x, ParticleMass.y);
+				float mass = _random.NextFloat(ParticleMass.x, ParticleMass.y);
 				float radius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
 				float scale = radius * 2f;
 
-				Translation pos = new Translation() { Value = new float3(r.NextFloat2(bottomLeft, topRight), 0f) };
+				Translation pos = new Translation()
+					{ Value = new float3(_random.NextFloat2(bottomLeft, topRight), 0f) };
 
 				Entity particle = buffer.Instantiate(ParticlePrefab);
 
 				buffer.SetComponent(particle, pos);
 				buffer.SetComponent(particle, new Scale() { Value = scale });
-				buffer.SetComponent(particle, new Velocity() { Value = r.NextFloat2(minVal, maxVel) });
+				buffer.SetComponent(particle, new Velocity() { Value = _random.NextFloat2(minVal, maxVel) });
 				buffer.SetComponent(particle, new Mass() { Value = mass });
 				buffer.SetComponent(particle, new Radius() { Value = radius });
+			}
+		}
+
+		public void SpawnParticlesGrid(EntityCommandBuffer buffer, int count)
+		{
+			float2 bottomLeft = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(0, 0));
+			float2 topRight = (Vector2)Camera.main.ScreenToWorldPoint(new Vector2(Screen.width, Screen.height));
+
+			float2 diff = (topRight - bottomLeft) / math.sqrt(count);
+
+			float2 minVal = new float2(-ParticleMaxSpeed, -ParticleMaxSpeed);
+			float2 maxVel = new float2(ParticleMaxSpeed, ParticleMaxSpeed);
+
+			for (float y = bottomLeft.y + diff.y; y < topRight.y; y += diff.y)
+			{
+				for (float x = bottomLeft.x + diff.x; x < topRight.x; x += diff.x)
+				{
+					float mass = _random.NextFloat(ParticleMass.x, ParticleMass.y);
+					float radius = math.pow(3 / (4 * math.PI) * mass / ParticleDensity, 1f / 3f);
+					float scale = radius * 2f;
+
+					Translation pos = new Translation()
+						{ Value = new float3(x, y, 0f) };
+
+					Entity particle = buffer.Instantiate(ParticlePrefab);
+
+					buffer.SetComponent(particle, pos);
+					buffer.SetComponent(particle, new Scale() { Value = scale });
+					buffer.SetComponent(particle, new Velocity() { Value = _random.NextFloat2(minVal, maxVel) });
+					buffer.SetComponent(particle, new Mass() { Value = mass });
+					buffer.SetComponent(particle, new Radius() { Value = radius });
+				}
 			}
 		}
 	}

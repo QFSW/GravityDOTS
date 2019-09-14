@@ -13,14 +13,14 @@ namespace QFSW.GravityDOTS
     [UpdateInGroup(typeof(FixedSimulationSystemGroup))]
     public class GravitySystem : JobComponentSystem
     {
-        public const float Scale = 10E9f;
+        public const float Scale = 10E8f;
         public const float G = 6.6743015E-11f;
 
         // Each instance of the job call is an attractee
         // The inner loop handles attractors
         // This removes the race condition
-		[BurstCompile]
-        private struct GravityJob : IJobForEach<Mass, Translation, Velocity>
+        [BurstCompile]
+        private struct GravityJob : IJobForEach<Mass, Translation, Radius, Velocity>
         {
             public int AttractorCount;
             public float DeltaTime;
@@ -31,15 +31,22 @@ namespace QFSW.GravityDOTS
             [DeallocateOnJobCompletion, ReadOnly]
             public NativeArray<Translation> AttractorPosition;
 
-            public void Execute([ReadOnly] ref Mass mass, [ReadOnly] ref Translation position, ref Velocity velocity)
+            [DeallocateOnJobCompletion, ReadOnly]
+            public NativeArray<Radius> AttractorRadius;
+
+            public void Execute([ReadOnly] ref Mass mass, [ReadOnly] ref Translation position,
+                [ReadOnly] ref Radius radius, ref Velocity velocity)
             {
                 float2 totalForce = new float2();
                 for (int i = 0; i < AttractorCount; i++)
                 {
                     float2 posdelta = (AttractorPosition[i].Value - position.Value).xy;
-                    
-                    if (math.all(math.abs(posdelta) > 0.0001f))
+
+                    if (!(posdelta.x == 0 && posdelta.y == 0))
                     {
+                        if (math.distancesq(AttractorPosition[i].Value, position.Value) < radius.Value * AttractorRadius[i].Value)
+                            continue;
+
                         float distsq = posdelta.x * posdelta.x + posdelta.y * posdelta.y;
                         float distinv = math.rsqrt(distsq);
                         float fmag = Scale * G * mass.Value * AttractorMass[i].Value / distsq;
@@ -59,7 +66,8 @@ namespace QFSW.GravityDOTS
         {
             _attractorQuery = GetEntityQuery(
                 ComponentType.ReadOnly<Mass>(),
-                ComponentType.ReadOnly<Translation>()
+                ComponentType.ReadOnly<Translation>(),
+                ComponentType.ReadOnly<Radius>()
             );
         }
 
@@ -71,6 +79,7 @@ namespace QFSW.GravityDOTS
                 AttractorCount = _attractorQuery.CalculateEntityCount(),
                 AttractorMass = _attractorQuery.ToComponentDataArray<Mass>(Allocator.TempJob),
                 AttractorPosition = _attractorQuery.ToComponentDataArray<Translation>(Allocator.TempJob),
+                AttractorRadius = _attractorQuery.ToComponentDataArray<Radius>(Allocator.TempJob),
             };
 
             return job.Schedule(this, inputDependencies);

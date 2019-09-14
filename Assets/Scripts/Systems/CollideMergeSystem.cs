@@ -17,11 +17,14 @@ namespace QFSW.GravityDOTS
 
 		private EntityQuery particleQuery;
 
-		private EntityCommandBufferSystem bufferSystem;
+		private EntityCommandBufferSystem _bufferSystem;
+
+		private NativeHashMap<Entity, byte> _destroyedEntities;
+		private NativeQueue<CollisionData> _collisions;
 
 		protected override void OnCreate()
 		{
-			bufferSystem = World.GetOrCreateSystem<FixedSimulationEntityCommandBufferSystem>();
+			_bufferSystem = World.GetOrCreateSystem<FixedSimulationEntityCommandBufferSystem>();
 
 			particleQuery = GetEntityQuery(
 				ComponentType.ReadOnly<Bounded>(),
@@ -30,11 +33,28 @@ namespace QFSW.GravityDOTS
 				ComponentType.ReadOnly<Mass>(),
 				ComponentType.ReadOnly<Radius>()
 			);
+
+			_destroyedEntities = new NativeHashMap<Entity, byte>(64, Allocator.Persistent);
+			_collisions = new NativeQueue<CollisionData>(Allocator.Persistent);
+		}
+
+		protected override void OnDestroy()
+		{
+			_destroyedEntities.Dispose();
+			_collisions.Dispose();
+		}
+
+		private struct CollisionData
+		{
+			public Entity Entity1, Entity2;
+			public float3 NewPosition;
+			public float NewRadius;
+			public float NewMass;
+			public float2 NewVelocity;
 		}
 
 		private struct CollideMergeJob : IJobParallelFor
 		{
-			public Entity ParticlePrefab;
 			public float ParticleDensity;
 
 			[ReadOnly, DeallocateOnJobCompletion]
@@ -55,10 +75,7 @@ namespace QFSW.GravityDOTS
 			[ReadOnly]
 			public ArchetypeChunkComponentType<Velocity> VelocityType;
 
-			public EntityCommandBuffer.Concurrent Buffer;
-
-			public static ConcurrentDictionary<Entity, Entity> EntitiesToDestroy =
-				new ConcurrentDictionary<Entity, Entity>();
+			public NativeQueue<CollisionData>.ParallelWriter CollisionQueue;
 
 			private void ExecuteChunks(int index, ArchetypeChunk chunk1, ArchetypeChunk chunk2)
 			{
@@ -77,7 +94,6 @@ namespace QFSW.GravityDOTS
 				for (int i1 = 0; i1 < chunk1.Count; i1++)
 				{
 					Entity entity1 = entityData1[i1];
-					if (EntitiesToDestroy.ContainsKey(entity1)) continue;
 
 					float3 pos1 = positionData1[i1].Value;
 					float rad1 = radiusData1[i1].Value;
@@ -86,7 +102,6 @@ namespace QFSW.GravityDOTS
 					{
 						Entity entity2 = entityData2[i2];
 						if (entity1 == entity2) continue;
-						if (EntitiesToDestroy.ContainsKey(entity2)) continue;
 
 						float3 pos2 = positionData2[i2].Value;
 						float rad = rad1 + radiusData2[i2].Value;
@@ -101,19 +116,15 @@ namespace QFSW.GravityDOTS
 								 velocityData2[i2].Value * massData2[i2].Value) / newMass;
 							float3 newPos = (pos1 * massData1[i1].Value + pos2 * massData2[i2].Value) / newMass;
 
-							Entity particle = Buffer.Instantiate(index, ParticlePrefab);
-
-							Buffer.SetComponent(index, particle, new Translation { Value = newPos });
-							Buffer.SetComponent(index, particle, new Scale { Value = newRadius * 2 });
-							Buffer.SetComponent(index, particle, new Velocity { Value = newVelocity });
-							Buffer.SetComponent(index, particle, new Mass { Value = newMass });
-							Buffer.SetComponent(index, particle, new Radius { Value = newRadius });
-
-							EntitiesToDestroy.TryAdd(entity1, entity1);
-							EntitiesToDestroy.TryAdd(entity2, entity2);
-
-							Buffer.DestroyEntity(index, entity1);
-							Buffer.DestroyEntity(index, entity2);
+							CollisionQueue.Enqueue(new CollisionData()
+							{
+								Entity1 = entity1,
+								Entity2 = entity2,
+								NewPosition = newPos,
+								NewMass = newMass,
+								NewRadius = newRadius,
+								NewVelocity = newVelocity,
+							});
 						}
 					}
 				}
@@ -123,7 +134,7 @@ namespace QFSW.GravityDOTS
 			{
 				ArchetypeChunk chunk1 = Chunks[index];
 
-				for (int i2 = index; i2 < Chunks.Length; i2++)
+				for (int i2 = 0; i2 < Chunks.Length; i2++)
 				{
 					ArchetypeChunk chunk2 = Chunks[i2];
 					ExecuteChunks(index, chunk1, chunk2);
@@ -131,9 +142,43 @@ namespace QFSW.GravityDOTS
 			}
 		}
 
+		private struct ProcessCollisionsJob : IJob
+		{
+			public Entity ParticlePrefab;
+
+			public NativeQueue<CollisionData> CollisionQueue;
+
+			public NativeHashMap<Entity, byte> DestroyedEntities;
+
+			public EntityCommandBuffer Buffer;
+
+			public void Execute()
+			{
+				while (CollisionQueue.TryDequeue(out CollisionData data))
+				{
+					if (DestroyedEntities.ContainsKey(data.Entity1) || DestroyedEntities.ContainsKey(data.Entity2))
+						continue;
+
+					Entity particle = Buffer.Instantiate(ParticlePrefab);
+
+					Buffer.SetComponent(particle, new Translation { Value = data.NewPosition });
+					Buffer.SetComponent(particle, new Scale { Value = data.NewRadius * 2 });
+					Buffer.SetComponent(particle, new Velocity { Value = data.NewVelocity });
+					Buffer.SetComponent(particle, new Mass { Value = data.NewMass });
+					Buffer.SetComponent(particle, new Radius { Value = data.NewRadius });
+
+					DestroyedEntities.TryAdd(data.Entity1, 0);
+					DestroyedEntities.TryAdd(data.Entity2, 0);
+
+					Buffer.DestroyEntity(data.Entity1);
+					Buffer.DestroyEntity(data.Entity2);
+				}
+			}
+		}
+
 		protected override JobHandle OnUpdate(JobHandle inputDeps)
 		{
-			EntityCommandBuffer buffer = bufferSystem.CreateCommandBuffer();
+			EntityCommandBuffer buffer = _bufferSystem.CreateCommandBuffer();
 
 			NativeArray<ArchetypeChunk> chunks = particleQuery.CreateArchetypeChunkArray(Allocator.TempJob);
 
@@ -143,11 +188,8 @@ namespace QFSW.GravityDOTS
 			ArchetypeChunkComponentType<Radius> radiusType = GetArchetypeChunkComponentType<Radius>(true);
 			ArchetypeChunkComponentType<Velocity> velocityType = GetArchetypeChunkComponentType<Velocity>(true);
 
-			CollideMergeJob.EntitiesToDestroy.Clear();
-
 			CollideMergeJob job = new CollideMergeJob
 			{
-				ParticlePrefab = World.GetExistingSystem<SpawnParticlesSystem>().ParticlePrefab,
 				ParticleDensity = ParticleDensity,
 				Chunks = chunks,
 				EntityType = entityType,
@@ -155,11 +197,21 @@ namespace QFSW.GravityDOTS
 				MassType = massType,
 				RadiusType = radiusType,
 				VelocityType = velocityType,
-				Buffer = buffer.ToConcurrent()
+				CollisionQueue = _collisions.AsParallelWriter()
 			};
-
 			JobHandle handle = job.Schedule(chunks.Length, 1, inputDeps);
-			bufferSystem.AddJobHandleForProducer(handle);
+
+			_destroyedEntities.Clear();
+			ProcessCollisionsJob processCollisionsJob = new ProcessCollisionsJob()
+			{
+				ParticlePrefab = World.GetExistingSystem<SpawnParticlesSystem>().ParticlePrefab,
+				Buffer = buffer,
+				CollisionQueue = _collisions,
+				DestroyedEntities = _destroyedEntities
+			};
+			handle = processCollisionsJob.Schedule(handle);
+			_bufferSystem.AddJobHandleForProducer(handle);
+
 			return handle;
 		}
 	}

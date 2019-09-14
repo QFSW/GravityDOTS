@@ -430,8 +430,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1171005671}
-  - component: {fileID: 1171005673}
   - component: {fileID: 1171005672}
+  - component: {fileID: 1171005673}
   m_Layer: 0
   m_Name: Bootstrap
   m_TagString: Untagged
@@ -465,13 +465,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c40e4bf4f752d4102a413f060def32c0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _particleCount: 100
-  _spawnRate: 4
-  _particleMaxSpeed: 3
+  _spawnRate: 0
+  _particleMaxSpeed: 2
   _particleMass:
     x: 2
     y: 4
-  _particleDensity: 1500
+  _particleDensity: 2000
   _particleMaterial: {fileID: 2100000, guid: 23f48bd2185d8f94eb2ccff995b6ac93, type: 2}
   _particleMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!114 &1171005673
@@ -719,13 +718,13 @@ MonoBehaviour:
   m_margin: {x: 0, y: 0, z: 0, w: 0}
   m_textInfo:
     textComponent: {fileID: 1202628532489062}
-    characterCount: 0
+    characterCount: 1
     spriteCount: 0
     spaceCount: 0
-    wordCount: 0
+    wordCount: 1
     linkCount: 0
-    lineCount: 0
-    pageCount: 0
+    lineCount: 1
+    pageCount: 1
     materialCount: 1
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
@@ -2838,7 +2837,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 224005419075089107}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0
+  m_Size: 0.96943974
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
