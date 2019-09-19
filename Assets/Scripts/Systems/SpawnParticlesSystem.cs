@@ -51,9 +51,6 @@ namespace QFSW.GravityDOTS
 			}
 		}
 
-#if !QC_DISABLE
-		[Command("spawn")]
-#endif
 		[BurstCompile]
 		public void SpawnParticles(EntityCommandBuffer buffer, int count)
 		{

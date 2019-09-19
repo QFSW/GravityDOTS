@@ -126,7 +126,7 @@ namespace QFSW.GravityDOTS
 		}
 
 #if !QC_DISABLE
-		[Command("clear-particles"), Preserve]
+		[Command("clear"), Preserve]
 #endif
 		private void ClearParticles()
 		{
